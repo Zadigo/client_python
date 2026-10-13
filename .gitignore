@@ -10,3 +10,4 @@ dist
 htmlcov
 reports/
 *coverage*
+__pycache__/
