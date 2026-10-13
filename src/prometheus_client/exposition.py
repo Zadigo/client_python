@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import gzip
 import os
@@ -13,12 +15,8 @@ from socketserver import ThreadingMixIn
 from typing import (
     Any,
     Callable,
-    Dict,
-    List,
     Literal,
     Optional,
-    Tuple,
-    Union,
 )
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, quote_plus, urlparse
@@ -208,8 +206,8 @@ def _get_ssl_ctx(
         cafile: str | None = None,
         capath: str | None = None,
         client_auth_required: bool = False,
-        tls_min_version: Optional[ssl.TLSVersion] = None,
-        tls_max_version: Optional[ssl.TLSVersion] = None
+        tls_min_version: ssl.TLSVersion | None = None,
+        tls_max_version: ssl.TLSVersion | None = None
 ) -> ssl.SSLContext:
     """Load context supports SSL."""
     ssl_cxt = ssl.SSLContext(protocol=protocol)
@@ -250,18 +248,18 @@ def _get_ssl_ctx(
 
 
 def start_wsgi_server(
-        port: int,
-        addr: str = '0.0.0.0',
-        registry: Collector = REGISTRY,
-        certfile: str | None = None,
-        keyfile: str | None = None,
-        client_cafile: str | None = None,
-        client_capath: str | None = None,
-        protocol: int = ssl.PROTOCOL_TLS_SERVER,
-        client_auth_required: bool = False,
-        tls_min_version: Optional[ssl.TLSVersion] = None,
-        tls_max_version: Optional[ssl.TLSVersion] = None
-) -> Tuple[WSGIServer, threading.Thread]:
+    port: int,
+    addr: str = '0.0.0.0',
+    registry: Collector = REGISTRY,
+    certfile: str | None = None,
+    keyfile: str | None = None,
+    client_cafile: str | None = None,
+    client_capath: str | None = None,
+    protocol: int = ssl.PROTOCOL_TLS_SERVER,
+    client_auth_required: bool = False,
+    tls_min_version: ssl.TLSVersion | None = None,
+    tls_max_version: ssl.TLSVersion | None = None
+) -> tuple[WSGIServer, threading.Thread]:
     """Starts a WSGI server for prometheus metrics as a daemon thread."""
 
     class TmpServer(ThreadingWSGIServer):
@@ -348,7 +346,7 @@ def generate_latest(registry: Collector = REGISTRY, escaping: str = openmetrics.
                 openmetrics.escape_metric_name(mname, escaping), metric.documentation.replace('\\', r'\\').replace('\n', r'\n')))
             output.append(f'# TYPE {openmetrics.escape_metric_name(mname, escaping)} {mtype}\n')
 
-            om_samples: Dict[str, List[str]] = {}
+            om_samples: dict[str, list[str]] = {}
             for s in metric.samples:
                 for suffix in ['_created', '_gsum', '_gcount']:
                     if s.name == metric.name + suffix:
@@ -369,7 +367,7 @@ def generate_latest(registry: Collector = REGISTRY, escaping: str = openmetrics.
     return ''.join(output).encode('utf-8')
 
 
-def choose_encoder(accept_header: str) -> Tuple[Callable[[Collector], bytes], str]:
+def choose_encoder(accept_header: str) -> tuple[Callable[[Collector], bytes], str]:
     # Python client library accepts a narrower range of content-types than
     # Prometheus does.
     accept_header = accept_header or ''
@@ -398,7 +396,7 @@ def choose_encoder(accept_header: str) -> Tuple[Callable[[Collector], bytes], st
     return generate_latest, CONTENT_TYPE_PLAIN_0_0_4
 
 
-def _get_version(accept_header: List[str]) -> str:
+def _get_version(accept_header: list[str]) -> str:
     """Return the version tag from the Accept header.
 
     If no version is specified, returns empty string."""
@@ -412,7 +410,7 @@ def _get_version(accept_header: List[str]) -> str:
     return ""
 
 
-def _get_escaping(accept_header: List[str]) -> str:
+def _get_escaping(accept_header: list[str]) -> str:
     """Return the escaping scheme from the Accept header.
 
     If no escaping scheme is specified or the scheme is not one of the allowed
@@ -516,10 +514,10 @@ def write_to_textfile(path: str, registry: Collector, escaping: str = openmetric
 def _make_handler(
         url: str,
         method: str,
-        timeout: Optional[float],
-        headers: Sequence[Tuple[str, str]],
+        timeout: float | None,
+        headers: Sequence[tuple[str, str]],
         data: bytes,
-        base_handler: Union[BaseHandler, type],
+        base_handler: BaseHandler | type
 ) -> Callable[[], None]:
     def handle() -> None:
         request = Request(url, data=data)
@@ -536,8 +534,8 @@ def _make_handler(
 def default_handler(
         url: str,
         method: str,
-        timeout: Optional[float],
-        headers: List[Tuple[str, str]],
+        timeout: float | None,
+        headers: list[tuple[str, str]],
         data: bytes,
 ) -> Callable[[], None]:
     """Default handler that implements HTTP/HTTPS connections.
@@ -550,8 +548,8 @@ def default_handler(
 def passthrough_redirect_handler(
         url: str,
         method: str,
-        timeout: Optional[float],
-        headers: List[Tuple[str, str]],
+        timeout: float | None,
+        headers: list[tuple[str, str]],
         data: bytes,
 ) -> Callable[[], None]:
     """
@@ -570,8 +568,8 @@ def passthrough_redirect_handler(
 def basic_auth_handler(
         url: str,
         method: str,
-        timeout: Optional[float],
-        headers: List[Tuple[str, str]],
+        timeout: float | None,
+        headers: list[tuple[str, str]],
         data: bytes,
         username: str | None = None,
         password: str | None = None,
@@ -597,8 +595,8 @@ def basic_auth_handler(
 def tls_auth_handler(
         url: str,
         method: str,
-        timeout: Optional[float],
-        headers: List[Tuple[str, str]],
+        timeout: float | None,
+        headers: list[tuple[str, str]],
         data: bytes,
         certfile: str,
         keyfile: str,
@@ -632,8 +630,8 @@ def push_to_gateway(
         gateway: str,
         job: str,
         registry: Collector,
-        grouping_key: Optional[Dict[str, Any]] = None,
-        timeout: Optional[float] = 30,
+        grouping_key: dict[str, Any] | None = None,
+        timeout: float | None = 30,
         handler: Callable = default_handler,
         compression: CompressionType = None,
 ) -> None:
@@ -683,9 +681,9 @@ def push_to_gateway(
 def pushadd_to_gateway(
         gateway: str,
         job: str,
-        registry: Optional[Collector],
-        grouping_key: Optional[Dict[str, Any]] = None,
-        timeout: Optional[float] = 30,
+        registry: Collector | None,
+        grouping_key: dict[str, Any] | None = None,
+        timeout: float | None = 30,
         handler: Callable = default_handler,
         compression: CompressionType = None,
 ) -> None:
@@ -717,8 +715,8 @@ def pushadd_to_gateway(
 def delete_from_gateway(
         gateway: str,
         job: str,
-        grouping_key: Optional[Dict[str, Any]] = None,
-        timeout: Optional[float] = 30,
+        grouping_key: dict[str, Any] | None = None,
+        timeout: float | None = 30,
         handler: Callable = default_handler,
 ) -> None:
     """Delete metrics from the given pushgateway.
@@ -747,9 +745,9 @@ def _use_gateway(
         method: str,
         gateway: str,
         job: str,
-        registry: Optional[Collector],
-        grouping_key: Optional[Dict[str, Any]],
-        timeout: Optional[float],
+        registry: Collector | None,
+        grouping_key: dict[str, Any] | None,
+        timeout: float | None,
         handler: Callable,
         compression: CompressionType = None,
 ) -> None:
@@ -768,7 +766,7 @@ def _use_gateway(
         for k, v in sorted(grouping_key.items()))
 
     data = b''
-    headers: List[Tuple[str, str]] = []
+    headers: list[tuple[str, str]] = []
     if method != 'DELETE':
         if registry is None:
             registry = REGISTRY
@@ -786,7 +784,7 @@ def _use_gateway(
     )()
 
 
-def _compress_payload(data: bytes, compression: CompressionType) -> Tuple[bytes, List[Tuple[str, str]]]:
+def _compress_payload(data: bytes, compression: CompressionType) -> tuple[bytes, list[tuple[str, str]]]:
     headers = [('Content-Type', CONTENT_TYPE_PLAIN_0_0_4)]
     if compression is None:
         return data, headers
@@ -820,7 +818,7 @@ def _escape_grouping_key(k, v):
         return k, quote_plus(v)
 
 
-def instance_ip_grouping_key() -> Dict[str, Any]:
+def instance_ip_grouping_key() -> dict[str, Any]:
     """Grouping key with instance set to the IP Address of this host."""
     with closing(socket.socket(socket.AF_INET, socket.SOCK_DGRAM)) as s:
         if sys.platform == 'darwin':

@@ -6,9 +6,9 @@ import socket
 import threading
 import time
 from timeit import default_timer
-from typing import Callable, Tuple
+from typing import Callable
 
-from ..registry import Collector, REGISTRY
+from ..registry import REGISTRY, Collector
 
 # Roughly, have to keep to what works as a file name.
 # We also remove periods, so labels can be distinguished.
@@ -47,7 +47,7 @@ class _RegularPush(threading.Thread):
 
 class GraphiteBridge:
     def __init__(self,
-                 address: Tuple[str, int],
+                 address: tuple[str, int],
                  registry: Collector = REGISTRY,
                  timeout_seconds: float = 30,
                  _timer: Callable[[], float] = time.time,

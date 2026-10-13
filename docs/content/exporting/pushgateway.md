@@ -99,7 +99,7 @@ Uses the HTTP `PUT` method.
 | `job` | `str` | required | Value for the `job` label attached to all pushed metrics. |
 | `registry` | `Collector` | required | Registry whose metrics are pushed. Typically a `CollectorRegistry` instance. |
 | `grouping_key` | `Optional[Dict[str, Any]]` | `None` | Additional labels to identify the group. See the [Pushgateway documentation](https://github.com/prometheus/pushgateway/blob/master/README.md) for details. |
-| `timeout` | `Optional[float]` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
+| `timeout` | `float | None` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
 | `handler` | `Callable` | `default_handler` | Function that performs the HTTP request. See [Handlers](#handlers) below. |
 | `compression` | `str | None` | `None` | Compress the payload before sending. Accepts `'gzip'` or `'snappy'`. Snappy requires the [`python-snappy`](https://github.com/andrix/python-snappy) package. |
 
@@ -114,7 +114,7 @@ Uses the HTTP `POST` method.
 | `job` | `str` | required | Value for the `job` label attached to all pushed metrics. |
 | `registry` | `Optional[Collector]` | required | Registry whose metrics are pushed. Pass `None` to use the default `REGISTRY`. |
 | `grouping_key` | `Optional[Dict[str, Any]]` | `None` | Additional labels to identify the group. |
-| `timeout` | `Optional[float]` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
+| `timeout` | `float | None` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
 | `handler` | `Callable` | `default_handler` | Function that performs the HTTP request. |
 | `compression` | `str | None` | `None` | Compress the payload. Accepts `'gzip'` or `'snappy'`. |
 
@@ -128,7 +128,7 @@ Uses the HTTP `DELETE` method. Has no `registry` or `compression` parameters.
 | `gateway` | `str` | required | URL of the pushgateway. |
 | `job` | `str` | required | Value for the `job` label identifying the group to delete. |
 | `grouping_key` | `Optional[Dict[str, Any]]` | `None` | Additional labels to identify the group. |
-| `timeout` | `Optional[float]` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
+| `timeout` | `float | None` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
 | `handler` | `Callable` | `default_handler` | Function that performs the HTTP request. |
 
 ### `instance_ip_grouping_key()`
@@ -151,8 +151,8 @@ A handler is a callable with the signature:
 def my_handler(url, method, timeout, headers, data):
     # url: str — full request URL
     # method: str — HTTP method (PUT, POST, DELETE)
-    # timeout: Optional[float] — seconds before aborting, or None
-    # headers: List[Tuple[str, str]] — HTTP headers to include
+    # timeout: float | None — seconds before aborting, or None
+    # headers: List[tuple[str, str]] — HTTP headers to include
     # data: bytes — request body
     ...
     return callable_that_performs_the_request

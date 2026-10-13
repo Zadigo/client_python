@@ -2,7 +2,6 @@ import json
 import mmap
 import os
 import struct
-from typing import List
 
 _INITIAL_MMAP_SIZE = 1 << 16
 _pack_integer_func = struct.Struct(b'i').pack
@@ -138,7 +137,7 @@ class MmapedDict:
             self._f = None
 
 
-def mmap_key(metric_name: str, name: str, labelnames: List[str], labelvalues: List[str], help_text: str) -> str:
+def mmap_key(metric_name: str, name: str, labelnames: list[str], labelvalues: list[str], help_text: str) -> str:
     """Format a key for use in the mmap file."""
     # ensure labels are in consistent order for identity
     labels = dict(zip(labelnames, labelvalues))

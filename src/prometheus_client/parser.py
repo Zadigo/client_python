@@ -1,9 +1,11 @@
+from __future__ import annotations
+
 import io as StringIO
 import re
 import string
 from collections.abc import Iterable
 from re import Match
-from typing import Dict, List, Optional, TextIO, Tuple
+from typing import TextIO
 
 from .metrics_core import Metric
 from .samples import Sample
@@ -53,8 +55,8 @@ def _is_character_escaped(s: str, charpos: int) -> bool:
     return num_bslashes % 2 == 1
 
 
-def parse_labels(labels_string: str, openmetrics: bool = False) -> Dict[str, str]:
-    labels: Dict[str, str] = {}
+def parse_labels(labels_string: str, openmetrics: bool = False) -> dict[str, str]:
+    labels: dict[str, str] = {}
 
     # Copy original labels
     sub_labels = labels_string.strip()
@@ -107,7 +109,7 @@ def parse_labels(labels_string: str, openmetrics: bool = False) -> Dict[str, str
         raise ValueError("Invalid labels: " + labels_string)
 
 
-def _next_term(text: str, openmetrics: bool) -> Tuple[str, str, str]:
+def _next_term(text: str, openmetrics: bool) -> tuple[str, str, str]:
     """Extract the next comma-separated label term from the text. The results
     are stripped terms for the label name, label value, and then the remainder
     of the string including the final , or }.
@@ -154,9 +156,8 @@ def _next_unquoted_char(text: str, chs: str | None, startidx: int = 0) -> int:
     for i, c in enumerate(text[startidx:]):
         if c == '"' and not _is_character_escaped(text, startidx + i):
             in_quotes = not in_quotes
-        if not in_quotes:
-            if c in chs:
-                return startidx + i
+        if not in_quotes and c in chs:
+            return startidx + i
     return -1
 
 
@@ -170,9 +171,8 @@ def _last_unquoted_char(text: str, chs: str | None) -> int:
         if text[i] == '"' and not _is_character_escaped(text, i):
             in_quotes = not in_quotes
 
-        if not in_quotes:
-            if text[i] in chs:
-                return i
+        if not in_quotes and text[i] in chs:
+            return i
         i -= 1
     return -1
 
@@ -222,7 +222,7 @@ def _unquote_unescape(text):
 
 
 # If we have multiple values only consider the first
-def _parse_value_and_timestamp(s: str) -> Tuple[float, Optional[float]]:
+def _parse_value_and_timestamp(s: str) -> tuple[float, float | None]:
     s = s.lstrip()
     separator = " "
     if separator not in s:
@@ -288,10 +288,10 @@ def text_fd_to_metric_families(fd: TextIO) -> Iterable[Metric]:
     name = ''
     documentation = ''
     typ = 'untyped'
-    samples: List[Sample] = []
+    samples: list[Sample] = []
     allowed_names = []
 
-    def build_metric(name: str, documentation: str, typ: str, samples: List[Sample]) -> Metric:
+    def build_metric(name: str, documentation: str, typ: str, samples: list[Sample]) -> Metric:
         # Munge counters into OpenMetrics representation
         # used internally.
         if typ == 'counter':
