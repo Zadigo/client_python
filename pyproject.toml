@@ -36,6 +36,7 @@ classifiers = [
     "Topic :: System :: Monitoring",
 ]
 dependencies = [
+    "pydantic>=2.13.5",
     "twisted>=25.5.0",
 ]
 
@@ -62,7 +63,6 @@ dev = [
     "aiohttp>=3.13.5",
     "django>=4.2.30",
     "httpx2>=2.0.0",
-    "pydantic>=2.13.5",
     "pytest>=8.4.2",
     "pytest-aio>=1.9.0",
     "pytest-cov>=7.1.0",

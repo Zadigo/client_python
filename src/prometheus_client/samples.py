@@ -70,8 +70,8 @@ class NativeHistogram(NamedTuple):
 
 class Sample(NamedTuple):
     name: str
-    labels: dict[str, str]
-    value: float
+    labels: dict[str, str] | None
+    value: float | None
     timestamp: float | Timestamp | None = None
     exemplar: Exemplar | None = None
     native_histogram: NativeHistogram | None = None

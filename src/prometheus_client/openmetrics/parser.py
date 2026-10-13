@@ -1,21 +1,34 @@
 #!/usr/bin/env python
 
-
+import io
 import io as StringIO
 import math
 import re
 
-from ..metrics_core import Metric
-from ..parser import (
-    _last_unquoted_char, _next_unquoted_char, _parse_value, _split_quoted,
-    _unquote_unescape, parse_labels,
+from prometheus_client.metrics_core import Metric
+from prometheus_client.parser import (
+    _last_unquoted_char,
+    _next_unquoted_char,
+    _parse_value,
+    _split_quoted,
+    _unquote_unescape,
+    parse_labels,
 )
-from ..samples import BucketSpan, Exemplar, NativeHistogram, Sample, Timestamp
-from ..utils import floatToGoString
-from ..validation import _is_valid_legacy_metric_name, _validate_metric_name
+from prometheus_client.samples import (
+    BucketSpan,
+    Exemplar,
+    NativeHistogram,
+    Sample,
+    Timestamp,
+)
+from prometheus_client.utils import floatToGoString
+from prometheus_client.validation import (
+    _is_valid_legacy_metric_name,
+    _validate_metric_name,
+)
 
 
-def text_string_to_metric_families(text):
+def text_string_to_metric_families(text: str):
     """Parse Openmetrics text format from a unicode string.
 
     See text_fd_to_metric_families.
@@ -257,22 +270,22 @@ def _parse_nh_sample(text, suffixes):
         labels_end = i = _next_unquoted_char(text, '}', i)
         if labels_end == -1:
             raise ValueError
-    
+
     # If there is no subsequent unquoted {, then it's definitely not a nh.
     nh_value_start = _next_unquoted_char(text, '{', i + 1)
     if nh_value_start == -1:
         return
-    
+
     # Edge case: if there is an unquoted # between the metric definition and the {,
     # then this is actually an exemplar
     exemplar = _next_unquoted_char(text, '#', i + 1)
     if exemplar != -1 and exemplar < nh_value_start:
         return
-    
+
     nh_value_end = _next_unquoted_char(text, '}', nh_value_start)
     if nh_value_end == -1:
         raise ValueError
-    
+
     if has_metric_labels:
         labelstext = text[labels_start + 1:labels_end]
         labels = parse_labels(labelstext, True)
@@ -289,7 +302,7 @@ def _parse_nh_sample(text, suffixes):
             # Edge case: the only "label" is the name definition.
             if not labels:
                 labels = None
-             
+
         nh_value = text[nh_value_start:]
         nat_hist_value = _parse_nh_struct(nh_value)
         return Sample(name, labels, None, None, None, nat_hist_value)
@@ -324,7 +337,7 @@ def _parse_nh_struct(text):
     neg_spans = _compose_spans(span_matches, 'negative_spans')
     pos_deltas = _compose_deltas(deltas, 'positive_deltas')
     neg_deltas = _compose_deltas(deltas, 'negative_deltas')
-      
+
     return NativeHistogram(
         count_value=count_value,
         sum_value=sum_value,
@@ -336,7 +349,7 @@ def _parse_nh_struct(text):
         pos_deltas=pos_deltas,
         neg_deltas=neg_deltas
     )
-  
+
 
 def _compose_spans(span_matches, spans_name):
     """Takes a list of span matches (expected to be a list of tuples) and a string 
@@ -377,7 +390,7 @@ def _compose_deltas(deltas, deltas_name):
     # after stripping whitespace and create a tuple from these integers.
     out_deltas_tuple = tuple(int(x.strip()) for x in elems)
     return out_deltas_tuple
-        
+
 
 def _group_for_sample(sample, name, typ):
     if typ == 'info':
@@ -459,7 +472,7 @@ def _check_histogram(samples, name):
         do_checks()
 
 
-def text_fd_to_metric_families(fd):
+def text_fd_to_metric_families(fd: io.TextIOBase):
     """Parse Prometheus text format from a file descriptor.
 
     This is a laxer parser than the main Go parser,
@@ -541,7 +554,7 @@ def text_fd_to_metric_families(fd):
                 group_timestamp_samples = set()
                 samples = []
                 allowed_names = [candidate_name]
-            
+
             if parts[1] == 'HELP':
                 if documentation is not None:
                     raise ValueError("More than one HELP for metric: " + line)
@@ -589,6 +602,7 @@ def text_fd_to_metric_families(fd):
                 seen_groups = set()
                 allowed_names = [sample.name]
 
+            # TODO: Transform to newer "match" in Python 3.10+ for sample validation.
             if typ == 'stateset' and name not in sample.labels:
                 raise ValueError("Stateset missing label: " + line)
             if (name + '_bucket' == sample.name
@@ -645,7 +659,7 @@ def text_fd_to_metric_families(fd):
                     (typ in ['histogram', 'gaugehistogram'] and sample.name.endswith('_bucket'))
                     or (typ in ['counter'] and sample.name.endswith('_total'))):
                 raise ValueError("Invalid line only histogram/gaugehistogram buckets and counters can have exemplars: " + line)
-    
+
     if name is not None:
         yield build_metric(name, documentation, typ, unit, samples)
 
