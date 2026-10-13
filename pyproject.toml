@@ -1,7 +1,3 @@
-[build-system]
-requires = ["setuptools>=77.0.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "prometheus_client"
 version = "0.26.0"
@@ -57,3 +53,65 @@ Documentation = "https://prometheus.github.io/client_python/"
 
 [tool.setuptools.package-data]
 prometheus_client = ['py.typed']
+
+[dependency-groups]
+dev = [
+    "django>=4.2.30",
+    "pydantic>=2.13.5",
+    "pytest>=8.4.2",
+    "pytest-aio>=1.9.0",
+    "pytest-cov>=7.1.0",
+    "pytest-reportlog>=0.4.0",
+    "pytest-timeout>=2.4.0",
+    "ruff>=0.17.0",
+]
+
+[tool.pyright]
+typeCheckingMode = "basic"
+reportMissingImports = true
+reportUntypedBaseClass = true
+
+[tool.pytest]
+testpaths = ["tests"]
+timeout="5000"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "api: marks tests as api tests",
+    "integration: marks tests as integration tests",
+    "unit: marks tests as unit tests",
+]
+
+[tool.pytest_env]
+env_files = [".env", ".env.test"]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+publish-url = "https://test.pypi.org/legacy/"
+explicit = true
+
+[build-system]
+requires = ["setuptools>=77.0.0"]
+build-backend = "setuptools.build_meta"
+
+# For UV
+# [build-system]
+# requires = ["uv_build>=0.9,<0.10"]
+# build-backend = "uv_build"
+
+[tool.coverage.run]
+omit = [
+    "manage.py",
+    "*/migrations/*",
+    "*/__init__.py",
+    "*/typings.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+    "if __name__ == .__main__.:",
+]

@@ -1,13 +1,21 @@
 from .metrics import Counter, Enum, Gauge, Histogram, Info, Summary
 from .metrics_core import (
-    CounterMetricFamily, GaugeHistogramMetricFamily, GaugeMetricFamily,
-    HistogramMetricFamily, InfoMetricFamily, Metric, StateSetMetricFamily,
-    SummaryMetricFamily, UnknownMetricFamily, UntypedMetricFamily,
+    CounterMetricFamily,
+    GaugeHistogramMetricFamily,
+    GaugeMetricFamily,
+    HistogramMetricFamily,
+    InfoMetricFamily,
+    Metric,
+    StateSetMetricFamily,
+    SummaryMetricFamily,
+    UnknownMetricFamily,
+    UntypedMetricFamily,
 )
-from .registry import CollectorRegistry, DuplicateTimeseries, REGISTRY
+from .registry import REGISTRY, CollectorRegistry, DuplicateTimeseries
 from .samples import BucketSpan, Exemplar, NativeHistogram, Sample, Timestamp
 
 __all__ = (
+    'REGISTRY',
     'BucketSpan',
     'CollectorRegistry',
     'Counter',
@@ -24,7 +32,6 @@ __all__ = (
     'InfoMetricFamily',
     'Metric',
     'NativeHistogram',
-    'REGISTRY',
     'Sample',
     'StateSetMetricFamily',
     'Summary',
