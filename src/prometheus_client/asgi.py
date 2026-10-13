@@ -1,8 +1,8 @@
-from typing import Callable
+from collections.abc import Callable
 from urllib.parse import parse_qs
 
-from .exposition import _bake_output
-from .registry import REGISTRY, Collector
+from prometheus_client.exposition import _bake_output
+from prometheus_client.registry import REGISTRY, Collector
 
 
 def make_asgi_app(registry: Collector = REGISTRY, disable_compression: bool = False) -> Callable:

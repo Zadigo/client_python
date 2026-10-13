@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from .exposition import (
+from prometheus_client.exposition import (
     CONTENT_TYPE_LATEST,
     CONTENT_TYPE_PLAIN_0_0_4,
     CONTENT_TYPE_PLAIN_1_0_0,
@@ -16,8 +16,8 @@ from .exposition import (
     start_wsgi_server,
     write_to_textfile,
 )
-from .gc_collector import GC_COLLECTOR, GCCollector
-from .metrics import (
+from prometheus_client.gc_collector import GC_COLLECTOR, GCCollector
+from prometheus_client.metrics import (
     Counter,
     Enum,
     Gauge,
@@ -27,10 +27,10 @@ from .metrics import (
     disable_created_metrics,
     enable_created_metrics,
 )
-from .metrics_core import Metric
-from .platform_collector import PLATFORM_COLLECTOR, PlatformCollector
-from .process_collector import PROCESS_COLLECTOR, ProcessCollector
-from .registry import REGISTRY, CollectorRegistry
+from prometheus_client.metrics_core import Metric
+from prometheus_client.platform_collector import PLATFORM_COLLECTOR, PlatformCollector
+from prometheus_client.process_collector import PROCESS_COLLECTOR, ProcessCollector
+from prometheus_client.registry import REGISTRY, CollectorRegistry
 
 __all__ = (
     'CONTENT_TYPE_LATEST',

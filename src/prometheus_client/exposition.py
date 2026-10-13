@@ -7,16 +7,14 @@ import socket
 import ssl
 import sys
 import threading
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from contextlib import closing
 from functools import partial
 from http.server import BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from typing import (
     Any,
-    Callable,
     Literal,
-    Optional,
 )
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, quote_plus, urlparse
@@ -30,9 +28,9 @@ from urllib.request import (
 )
 from wsgiref.simple_server import WSGIRequestHandler, WSGIServer, make_server
 
-from .openmetrics import exposition as openmetrics
-from .registry import REGISTRY, Collector
-from .utils import floatToGoString, parse_version
+from prometheus_client.openmetrics import exposition as openmetrics
+from prometheus_client.registry import REGISTRY, Collector
+from prometheus_client.utils import floatToGoString, parse_version
 
 try:
     import snappy  # type: ignore
@@ -65,7 +63,7 @@ CONTENT_TYPE_PLAIN_1_0_0 = 'text/plain; version=1.0.0; charset=utf-8'
 """Content type of the latest format"""
 
 CONTENT_TYPE_LATEST = CONTENT_TYPE_PLAIN_1_0_0
-CompressionType = Optional[Literal['gzip', 'snappy']]
+CompressionType = Literal['gzip', 'snappy']
 
 
 class _PrometheusRedirectHandler(HTTPRedirectHandler):
@@ -200,14 +198,14 @@ def _get_best_family(address, port):
 
 
 def _get_ssl_ctx(
-        certfile: str,
-        keyfile: str,
-        protocol: int,
-        cafile: str | None = None,
-        capath: str | None = None,
-        client_auth_required: bool = False,
-        tls_min_version: ssl.TLSVersion | None = None,
-        tls_max_version: ssl.TLSVersion | None = None
+    certfile: str,
+    keyfile: str,
+    protocol: int,
+    cafile: str | None = None,
+    capath: str | None = None,
+    client_auth_required: bool = False,
+    tls_min_version: ssl.TLSVersion | None = None,
+    tls_max_version: ssl.TLSVersion | None = None
 ) -> ssl.SSLContext:
     """Load context supports SSL."""
     ssl_cxt = ssl.SSLContext(protocol=protocol)
@@ -512,12 +510,12 @@ def write_to_textfile(path: str, registry: Collector, escaping: str = openmetric
 
 
 def _make_handler(
-        url: str,
-        method: str,
-        timeout: float | None,
-        headers: Sequence[tuple[str, str]],
-        data: bytes,
-        base_handler: BaseHandler | type
+    url: str,
+    method: str,
+    timeout: float | None,
+    headers: Sequence[tuple[str, str]],
+    data: bytes,
+    base_handler: BaseHandler | type
 ) -> Callable[[], None]:
     def handle() -> None:
         request = Request(url, data=data)
@@ -532,11 +530,11 @@ def _make_handler(
 
 
 def default_handler(
-        url: str,
-        method: str,
-        timeout: float | None,
-        headers: list[tuple[str, str]],
-        data: bytes,
+    url: str,
+    method: str,
+    timeout: float | None,
+    headers: list[tuple[str, str]],
+    data: bytes,
 ) -> Callable[[], None]:
     """Default handler that implements HTTP/HTTPS connections.
 
@@ -593,16 +591,16 @@ def basic_auth_handler(
 
 
 def tls_auth_handler(
-        url: str,
-        method: str,
-        timeout: float | None,
-        headers: list[tuple[str, str]],
-        data: bytes,
-        certfile: str,
-        keyfile: str,
-        cafile: str | None = None,
-        protocol: int = ssl.PROTOCOL_TLS_CLIENT,
-        insecure_skip_verify: bool = False,
+    url: str,
+    method: str,
+    timeout: float | None,
+    headers: list[tuple[str, str]],
+    data: bytes,
+    certfile: str,
+    keyfile: str,
+    cafile: str | None = None,
+    protocol: int = ssl.PROTOCOL_TLS_CLIENT,
+    insecure_skip_verify: bool = False,
 ) -> Callable[[], None]:
     """Handler that implements an HTTPS connection with TLS Auth.
 
@@ -627,13 +625,13 @@ def tls_auth_handler(
 
 
 def push_to_gateway(
-        gateway: str,
-        job: str,
-        registry: Collector,
-        grouping_key: dict[str, Any] | None = None,
-        timeout: float | None = 30,
-        handler: Callable = default_handler,
-        compression: CompressionType = None,
+    gateway: str,
+    job: str,
+    registry: Collector,
+    grouping_key: dict[str, Any] | None = None,
+    timeout: float | None = 30,
+    handler: Callable = default_handler,
+    compression: CompressionType | None = None,
 ) -> None:
     """Push metrics to the given pushgateway.
 
@@ -679,13 +677,13 @@ def push_to_gateway(
 
 
 def pushadd_to_gateway(
-        gateway: str,
-        job: str,
-        registry: Collector | None,
-        grouping_key: dict[str, Any] | None = None,
-        timeout: float | None = 30,
-        handler: Callable = default_handler,
-        compression: CompressionType = None,
+    gateway: str,
+    job: str,
+    registry: Collector | None,
+    grouping_key: dict[str, Any] | None = None,
+    timeout: float | None = 30,
+    handler: Callable = default_handler,
+    compression: CompressionType | None = None,
 ) -> None:
     """PushAdd metrics to the given pushgateway.
 
@@ -742,14 +740,14 @@ def delete_from_gateway(
 
 
 def _use_gateway(
-        method: str,
-        gateway: str,
-        job: str,
-        registry: Collector | None,
-        grouping_key: dict[str, Any] | None,
-        timeout: float | None,
-        handler: Callable,
-        compression: CompressionType = None,
+    method: str,
+    gateway: str,
+    job: str,
+    registry: Collector | None,
+    grouping_key: dict[str, Any] | None,
+    timeout: float | None,
+    handler: Callable,
+    compression: CompressionType | None = None,
 ) -> None:
     gateway_url = urlparse(gateway)
     # See https://bugs.python.org/issue27657 for details on urlparse in py>=3.7.6.

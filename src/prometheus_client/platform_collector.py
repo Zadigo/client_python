@@ -4,8 +4,8 @@ import platform as pf
 from collections.abc import Iterable
 from typing import Any
 
-from .metrics_core import GaugeMetricFamily, Metric
-from .registry import REGISTRY, Collector, CollectorRegistry
+from prometheus_client.metrics_core import GaugeMetricFamily, Metric
+from prometheus_client.registry import REGISTRY, Collector, CollectorRegistry
 
 
 class PlatformCollector(Collector):

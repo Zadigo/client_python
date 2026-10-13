@@ -7,9 +7,9 @@ from collections.abc import Iterable
 from re import Match
 from typing import TextIO
 
-from .metrics_core import Metric
-from .samples import Sample
-from .validation import (
+from prometheus_client.metrics_core import Metric
+from prometheus_client.samples import Sample
+from prometheus_client.validation import (
     _is_valid_legacy_metric_name,
     _validate_labelname,
     _validate_metric_name,
