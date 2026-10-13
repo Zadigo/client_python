@@ -1,21 +1,31 @@
+from __future__ import annotations
+
 import os
-from threading import Lock
 import time
 import types
-from typing import (
-    Any, Callable, Dict, Iterable, List, Literal, Optional, Sequence, Tuple,
-    Type, TypeVar, Union,
-)
 import warnings
+from collections.abc import Iterable, Sequence
+from threading import Lock
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Literal,
+    TypeVar,
+)
+
+from typing_extensions import Self
 
 from . import values  # retain this import style for testability
 from .context_managers import ExceptionCounter, InprogressTracker, Timer
 from .metrics_core import Metric
-from .registry import Collector, CollectorRegistry, REGISTRY
+from .registry import REGISTRY, Collector, CollectorRegistry
 from .samples import Exemplar, Sample
-from .utils import floatToGoString, INF
+from .utils import INF, floatToGoString
 from .validation import (
-    _validate_exemplar, _validate_labelnames, _validate_metric_name,
+    _validate_exemplar,
+    _validate_labelnames,
+    _validate_metric_name,
 )
 
 T = TypeVar('T', bound='MetricWrapperBase')
@@ -61,7 +71,7 @@ def enable_created_metrics():
 
 
 class MetricWrapperBase(Collector):
-    _type: Optional[str] = None
+    _type: str | None = None
     _reserved_labelnames: Sequence[str] = ()
 
     def _is_observable(self):
@@ -75,7 +85,7 @@ class MetricWrapperBase(Collector):
         # a counter, will fail if the metric is not observable, because only if a
         # metric is observable will the value be initialized.
         if not self._is_observable():
-            raise ValueError('%s metric is missing label values' % str(self._type))
+            raise ValueError(f'{self._type} metric is missing label values')
 
     def _is_parent(self):
         return self._labelnames and not self._labelvalues
@@ -99,16 +109,17 @@ class MetricWrapperBase(Collector):
         metric_type = type(self)
         return f"{metric_type.__module__}.{metric_type.__name__}({self._name})"
 
-    def __init__(self: T,
-                 name: str,
-                 documentation: str,
-                 labelnames: Iterable[str] = (),
-                 namespace: str = '',
-                 subsystem: str = '',
-                 unit: str = '',
-                 registry: Optional[CollectorRegistry] = REGISTRY,
-                 _labelvalues: Optional[Sequence[str]] = None,
-                 ) -> None:
+    def __init__(
+        self,
+        name: str,
+        documentation: str,
+        labelnames: Iterable[str] = (),
+        namespace: str = '',
+        subsystem: str = '',
+        unit: str = '',
+        registry: CollectorRegistry | None = REGISTRY,
+        _labelvalues: Sequence[str] | None = None,
+    ) -> None:
 
         self._original_name = name
         self._namespace = namespace
@@ -116,7 +127,7 @@ class MetricWrapperBase(Collector):
         self._name = _build_full_name(self._type, name, namespace, subsystem, unit)
         self._labelnames = _validate_labelnames(self, labelnames)
         self._labelvalues = tuple(_labelvalues or ())
-        self._kwargs: Dict[str, Any] = {}
+        self._kwargs: dict[str, Any] = {}
         self._documentation = documentation
         self._unit = unit
 
@@ -125,17 +136,16 @@ class MetricWrapperBase(Collector):
         if self._is_parent():
             # Prepare the fields needed for child metrics.
             self._lock = Lock()
-            self._metrics: Dict[Sequence[str], T] = {}
+            self._metrics: dict[Sequence[str], Self] = {}
 
         if self._is_observable():
             self._metric_init()
 
-        if not self._labelvalues:
-            # Register the multi-wrapper parent metric, or if a label-less metric, the whole shebang.
-            if registry:
-                registry.register(self)
+        # Register the multi-wrapper parent metric, or if a label-less metric, the whole shebang.
+        if not self._labelvalues and registry:
+            registry.register(self)
 
-    def labels(self: T, *labelvalues: object, **labelkwargs: object) -> T:
+    def labels(self, *labelvalues: object, **labelkwargs: object) -> Self:
         """Return the child for the given labelset.
 
         All metrics can have labels, allowing grouping of related time series.
@@ -159,13 +169,10 @@ class MetricWrapperBase(Collector):
         and [labels](http://prometheus.io/docs/practices/instrumentation/#use-labels).
         """
         if not self._labelnames:
-            raise ValueError('No label names were set when constructing %s' % self)
+            raise ValueError(f'No label names were set when constructing {self}')
 
         if self._labelvalues:
-            raise ValueError('{} already has labels set ({}); can not chain calls to .labels()'.format(
-                self,
-                dict(zip(self._labelnames, self._labelvalues))
-            ))
+            raise ValueError(f'{self} already has labels set ({dict(zip(self._labelnames, self._labelvalues))}); can not chain calls to .labels()')
 
         if labelvalues and labelkwargs:
             raise ValueError("Can't pass both *args and **kwargs")
@@ -209,11 +216,11 @@ class MetricWrapperBase(Collector):
                 UserWarning)
 
         if not self._labelnames:
-            raise ValueError('No label names were set when constructing %s' % self)
+            raise ValueError(f'No label names were set when constructing {self}')
 
         """Remove the given labelset from the metric."""
         if len(labelvalues) != len(self._labelnames):
-            raise ValueError('Incorrect label count (expected %d, got %s)' % (len(self._labelnames), labelvalues))
+            raise ValueError(f'Incorrect label count (expected {len(self._labelnames)}, got {labelvalues})')
         labelvalues = tuple(str(l) for l in labelvalues)
         with self._lock:
             if labelvalues in self._metrics:
@@ -228,20 +235,20 @@ class MetricWrapperBase(Collector):
             )
 
         if not self._labelnames:
-            raise ValueError('No label names were set when constructing %s' % self)
-        
+            raise ValueError(f'No label names were set when constructing {self}')
+
         if not isinstance(labels, dict):
             raise TypeError("labels must be a dict of {label_name: label_value}")
-    
+
         if not labels:
             return  # no operation
-    
-        invalid = [k for k in labels.keys() if k not in self._labelnames]
+
+        invalid = [k for k in labels if k not in self._labelnames]
         if invalid:
             raise ValueError(
-                'Unknown label names: %s; expected %s' % (invalid, self._labelnames)
+                f'Unknown label names: {invalid}; expected {self._labelnames}'
             )
-        
+
         pos_filter = {self._labelnames.index(k): str(v) for k, v in labels.items()}
 
         with self._lock:
@@ -250,7 +257,7 @@ class MetricWrapperBase(Collector):
                 if all(lv[pos] == want for pos, want in pos_filter.items()):
                     # pop with default avoids KeyError if concurrently removed
                     self._metrics.pop(lv, None)
-        
+
 
     def clear(self) -> None:
         """Remove all labelsets from the metric"""
@@ -278,7 +285,7 @@ class MetricWrapperBase(Collector):
                 yield Sample(suffix, dict(series_labels + list(sample_labels.items())), value, timestamp, exemplar, native_histogram_value)
 
     def _child_samples(self) -> Iterable[Sample]:  # pragma: no cover
-        raise NotImplementedError('_child_samples() must be implemented by %r' % self)
+        raise NotImplementedError(f'_child_samples() must be implemented by {self!r}')
 
     def _metric_init(self):  # pragma: no cover
         """
@@ -286,7 +293,7 @@ class MetricWrapperBase(Collector):
 
         This is factored as a separate function to allow for deferred initialization.
         """
-        raise NotImplementedError('_metric_init() must be implemented by %r' % self)
+        raise NotImplementedError(f'_metric_init() must be implemented by {self!r}')
 
 
 class Counter(MetricWrapperBase):
@@ -320,7 +327,7 @@ class Counter(MetricWrapperBase):
         # Count only one type of exception
         with c.count_exceptions(ValueError):
             pass
-            
+
     You can also reset the counter to zero in case your logical "process" restarts
     without restarting the actual python process.
 
@@ -334,7 +341,7 @@ class Counter(MetricWrapperBase):
                                         self._labelvalues, self._documentation)
         self._created = time.time()
 
-    def inc(self, amount: float = 1, exemplar: Optional[Dict[str, str]] = None) -> None:
+    def inc(self, amount: float = 1, exemplar: dict[str, str] | None = None) -> None:
         """Increment counter by the given amount."""
         self._raise_if_not_observable()
         if amount < 0:
@@ -349,7 +356,7 @@ class Counter(MetricWrapperBase):
         self._value.set(0)
         self._created = time.time()
 
-    def count_exceptions(self, exception: Union[Type[BaseException], Tuple[Type[BaseException], ...]] = Exception) -> ExceptionCounter:
+    def count_exceptions(self, exception: type[BaseException] | tuple[type[BaseException], ...] = Exception) -> ExceptionCounter:
         """Count exceptions in a block of code or function.
 
         Can be used as a function decorator or context manager.
@@ -417,8 +424,8 @@ class Gauge(MetricWrapperBase):
                  namespace: str = '',
                  subsystem: str = '',
                  unit: str = '',
-                 registry: Optional[CollectorRegistry] = REGISTRY,
-                 _labelvalues: Optional[Sequence[str]] = None,
+                 registry: CollectorRegistry | None = REGISTRY,
+                 _labelvalues: Sequence[str] | None = None,
                  multiprocess_mode: Literal['all', 'liveall', 'min', 'livemin', 'max', 'livemax', 'sum', 'livesum', 'mostrecent', 'livemostrecent'] = 'all',
                  ):
         self._multiprocess_mode = multiprocess_mode
@@ -535,7 +542,7 @@ class Summary(MetricWrapperBase):
             pass  # Logic to be timed
     """
     _type = 'summary'
-    _reserved_labelnames = ['quantile']
+    _reserved_labelnames: ClassVar[list[str]] = ['quantile']
 
     def _metric_init(self) -> None:
         self._count = values.ValueClass(self._type, self._name, self._name + '_count', self._labelnames,
@@ -610,20 +617,21 @@ class Histogram(MetricWrapperBase):
     They can be overridden by passing `buckets` keyword argument to `Histogram`.
     """
     _type = 'histogram'
-    _reserved_labelnames = ['le']
+    _reserved_labelnames: ClassVar[list[str]] = ['le']
     DEFAULT_BUCKETS = (.005, .01, .025, .05, .075, .1, .25, .5, .75, 1.0, 2.5, 5.0, 7.5, 10.0, INF)
 
-    def __init__(self,
-                 name: str,
-                 documentation: str,
-                 labelnames: Iterable[str] = (),
-                 namespace: str = '',
-                 subsystem: str = '',
-                 unit: str = '',
-                 registry: Optional[CollectorRegistry] = REGISTRY,
-                 _labelvalues: Optional[Sequence[str]] = None,
-                 buckets: Sequence[Union[float, str]] = DEFAULT_BUCKETS,
-                 ):
+    def __init__(
+        self,
+        name: str,
+        documentation: str,
+        labelnames: Iterable[str] = (),
+        namespace: str = '',
+        subsystem: str = '',
+        unit: str = '',
+        registry: CollectorRegistry | None = REGISTRY,
+        _labelvalues: Sequence[str] | None = None,
+        buckets: Sequence[float | str] = DEFAULT_BUCKETS,
+    ):
         self._prepare_buckets(buckets)
         super().__init__(
             name=name,
@@ -637,7 +645,7 @@ class Histogram(MetricWrapperBase):
         )
         self._kwargs['buckets'] = buckets
 
-    def _prepare_buckets(self, source_buckets: Sequence[Union[float, str]]) -> None:
+    def _prepare_buckets(self, source_buckets: Sequence[float | str]) -> None:
         buckets = [float(b) for b in source_buckets]
         if buckets != sorted(buckets):
             # This is probably an error on the part of the user,
@@ -650,7 +658,7 @@ class Histogram(MetricWrapperBase):
         self._upper_bounds = buckets
 
     def _metric_init(self) -> None:
-        self._buckets: List[values.ValueClass] = []
+        self._buckets: list[values.ValueClass] = []
         self._created = time.time()
         bucket_labelnames = self._labelnames + ('le',)
         self._sum = values.ValueClass(self._type, self._name, self._name + '_sum', self._labelnames, self._labelvalues, self._documentation)
@@ -664,7 +672,7 @@ class Histogram(MetricWrapperBase):
                 self._documentation)
             )
 
-    def observe(self, amount: float, exemplar: Optional[Dict[str, str]] = None) -> None:
+    def observe(self, amount: float, exemplar: dict[str, str] | None = None) -> None:
         """Observe the given amount.
 
         The amount is usually positive or zero. Negative values are
@@ -728,11 +736,10 @@ class Info(MetricWrapperBase):
         self._lock = Lock()
         self._value = {}
 
-    def info(self, val: Dict[str, str]) -> None:
+    def info(self, val: dict[str, str]) -> None:
         """Set info metric."""
         if self._labelname_set.intersection(val.keys()):
-            raise ValueError('Overlapping labels for Info metric, metric: {} child: {}'.format(
-                self._labelnames, val))
+            raise ValueError(f'Overlapping labels for Info metric, metric: {self._labelnames} child: {val}')
         if any(i is None for i in val.values()):
             raise ValueError('Label value cannot be None')
         with self._lock:
@@ -758,17 +765,18 @@ class Enum(MetricWrapperBase):
     """
     _type = 'stateset'
 
-    def __init__(self,
-                 name: str,
-                 documentation: str,
-                 labelnames: Sequence[str] = (),
-                 namespace: str = '',
-                 subsystem: str = '',
-                 unit: str = '',
-                 registry: Optional[CollectorRegistry] = REGISTRY,
-                 _labelvalues: Optional[Sequence[str]] = None,
-                 states: Optional[Sequence[str]] = None,
-                 ):
+    def __init__(
+        self,
+        name: str,
+        documentation: str,
+        labelnames: Sequence[str] = (),
+        namespace: str = '',
+        subsystem: str = '',
+        unit: str = '',
+        registry: CollectorRegistry | None = REGISTRY,
+        _labelvalues: Sequence[str] | None = None,
+        states: Sequence[str] | None = None,
+    ):
         if name in labelnames:
             raise ValueError(f'Overlapping labels for Enum metric: {name}')
         if not states:

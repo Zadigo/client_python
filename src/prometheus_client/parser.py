@@ -1,12 +1,16 @@
 import io as StringIO
 import re
 import string
-from typing import Dict, Iterable, List, Match, Optional, TextIO, Tuple
+from collections.abc import Iterable
+from re import Match
+from typing import Dict, List, Optional, TextIO, Tuple
 
 from .metrics_core import Metric
 from .samples import Sample
 from .validation import (
-    _is_valid_legacy_metric_name, _validate_labelname, _validate_metric_name,
+    _is_valid_legacy_metric_name,
+    _validate_labelname,
+    _validate_metric_name,
 )
 
 
@@ -61,18 +65,18 @@ def parse_labels(labels_string: str, openmetrics: bool = False) -> Dict[str, str
         while sub_labels:
             # The label name is before the equal, or if there's no equal, that's the
             # metric name.
-            
+
             name_term, value_term, sub_labels = _next_term(sub_labels, openmetrics)
             if not value_term:
                 if openmetrics:
                     raise ValueError("empty term in line: " + labels_string)
                 continue
-            
+
             label_name, quoted_name = _unquote_unescape(name_term)
-                
+
             if not quoted_name and not _is_valid_legacy_metric_name(label_name):
                 raise ValueError("unquoted UTF-8 metric name")
-                
+
             # Check for missing quotes 
             if not value_term or value_term[0] != '"':
                 raise ValueError
@@ -101,16 +105,16 @@ def parse_labels(labels_string: str, openmetrics: bool = False) -> Dict[str, str
         return labels
     except ValueError:
         raise ValueError("Invalid labels: " + labels_string)
-    
+
 
 def _next_term(text: str, openmetrics: bool) -> Tuple[str, str, str]:
     """Extract the next comma-separated label term from the text. The results
     are stripped terms for the label name, label value, and then the remainder
     of the string including the final , or }.
-    
+
     Raises ValueError if the term is empty and we're in openmetrics mode.
     """
-    
+
     # There may be a leading comma, which is fine here.
     if text[0] == ',':
         text = text[1:]
@@ -132,14 +136,14 @@ def _next_term(text: str, openmetrics: bool) -> Tuple[str, str, str]:
     term = text[:splitpos]
     if not term and openmetrics:
         raise ValueError("empty term:", term)
-    
+
     rest = text[splitpos:]
     return labelname, term.strip(), rest.strip()
 
 
-def _next_unquoted_char(text: str, chs: Optional[str], startidx: int = 0) -> int:
+def _next_unquoted_char(text: str, chs: str | None, startidx: int = 0) -> int:
     """Return position of next unquoted character in tuple, or -1 if not found.
-    
+
     It is always assumed that the first character being checked is not already
     inside quotes.
     """
@@ -156,7 +160,7 @@ def _next_unquoted_char(text: str, chs: Optional[str], startidx: int = 0) -> int
     return -1
 
 
-def _last_unquoted_char(text: str, chs: Optional[str]) -> int:
+def _last_unquoted_char(text: str, chs: str | None) -> int:
     """Return position of last unquoted character in list, or -1 if not found."""
     i = len(text) - 1
     in_quotes = False
@@ -165,7 +169,7 @@ def _last_unquoted_char(text: str, chs: Optional[str]) -> int:
     while i > 0:
         if text[i] == '"' and not _is_character_escaped(text, i):
             in_quotes = not in_quotes
-            
+
         if not in_quotes:
             if text[i] in chs:
                 return i
@@ -239,7 +243,7 @@ def _parse_value(value):
         return int(value)
     except ValueError:
         return float(value)
-    
+
 
 def _parse_sample(text):
     separator = " # "

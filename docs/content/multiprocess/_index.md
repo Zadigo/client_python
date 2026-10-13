@@ -112,7 +112,7 @@ Collector that aggregates metrics written by all processes in the multiprocess d
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `registry` | `CollectorRegistry` | required | Registry to register with. Pass a registry created inside the request context to avoid duplicate metrics. |
-| `path` | `Optional[str]` | `None` | Path to the directory containing the per-process metric files. Defaults to the `PROMETHEUS_MULTIPROC_DIR` environment variable. |
+| `path` | `str | None` | `None` | Path to the directory containing the per-process metric files. Defaults to the `PROMETHEUS_MULTIPROC_DIR` environment variable. |
 
 Raises `ValueError` if `path` is not set or does not point to an existing directory.
 
@@ -139,7 +139,7 @@ when a worker exits to prevent stale `live*` gauge values from accumulating.
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `pid` | `int` | required | PID of the process that has exited. |
-| `path` | `Optional[str]` | `None` | Path to the multiprocess directory. Defaults to the `PROMETHEUS_MULTIPROC_DIR` environment variable. |
+| `path` | `str | None` | `None` | Path to the multiprocess directory. Defaults to the `PROMETHEUS_MULTIPROC_DIR` environment variable. |
 
 Returns `None`. Only removes files for `live*` gauge modes (e.g. `livesum`, `liveall`); files
 for non-live modes are left in place so their last values remain visible until the directory is

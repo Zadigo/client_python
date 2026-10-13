@@ -1,27 +1,39 @@
 import base64
-from contextlib import closing
-from functools import partial
 import gzip
-from http.server import BaseHTTPRequestHandler
 import os
 import socket
-from socketserver import ThreadingMixIn
 import ssl
 import sys
 import threading
+from collections.abc import Sequence
+from contextlib import closing
+from functools import partial
+from http.server import BaseHTTPRequestHandler
+from socketserver import ThreadingMixIn
 from typing import (
-    Any, Callable, Dict, List, Literal, Optional, Sequence, Tuple, Union,
+    Any,
+    Callable,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
 )
 from urllib.error import HTTPError
 from urllib.parse import parse_qs, quote_plus, urlparse
 from urllib.request import (
-    BaseHandler, build_opener, HTTPHandler, HTTPRedirectHandler, HTTPSHandler,
+    BaseHandler,
+    HTTPHandler,
+    HTTPRedirectHandler,
+    HTTPSHandler,
     Request,
+    build_opener,
 )
-from wsgiref.simple_server import make_server, WSGIRequestHandler, WSGIServer
+from wsgiref.simple_server import WSGIRequestHandler, WSGIServer, make_server
 
 from .openmetrics import exposition as openmetrics
-from .registry import Collector, REGISTRY
+from .registry import REGISTRY, Collector
 from .utils import floatToGoString, parse_version
 
 try:
@@ -35,12 +47,12 @@ __all__ = (
     'CONTENT_TYPE_LATEST',
     'CONTENT_TYPE_PLAIN_0_0_4',
     'CONTENT_TYPE_PLAIN_1_0_0',
+    'MetricsHandler',
     'delete_from_gateway',
     'generate_latest',
     'instance_ip_grouping_key',
     'make_asgi_app',
     'make_wsgi_app',
-    'MetricsHandler',
     'push_to_gateway',
     'pushadd_to_gateway',
     'start_http_server',
@@ -145,7 +157,7 @@ def make_wsgi_app(registry: Collector = REGISTRY, disable_compression: bool = Fa
         elif method != 'GET':
             status = '405 Method Not Allowed'
             headers = [('Allow', 'OPTIONS,GET')]
-            output = '# HTTP {}: {}; use OPTIONS or GET\n'.format(status, method).encode()
+            output = f'# HTTP {status}: {method}; use OPTIONS or GET\n'.encode()
         elif environ['PATH_INFO'] == '/favicon.ico':
             # Serve empty response for browsers
             status = '200 OK'
@@ -193,8 +205,8 @@ def _get_ssl_ctx(
         certfile: str,
         keyfile: str,
         protocol: int,
-        cafile: Optional[str] = None,
-        capath: Optional[str] = None,
+        cafile: str | None = None,
+        capath: str | None = None,
         client_auth_required: bool = False,
         tls_min_version: Optional[ssl.TLSVersion] = None,
         tls_max_version: Optional[ssl.TLSVersion] = None
@@ -205,7 +217,7 @@ def _get_ssl_ctx(
     if cafile is not None or capath is not None:
         try:
             ssl_cxt.load_verify_locations(cafile, capath)
-        except IOError as exc:
+        except OSError as exc:
             exc_type = type(exc)
             msg = str(exc)
             raise exc_type(f"Cannot load CA certificate chain from file "
@@ -213,7 +225,7 @@ def _get_ssl_ctx(
     else:
         try:
             ssl_cxt.load_default_certs(purpose=ssl.Purpose.CLIENT_AUTH)
-        except IOError as exc:
+        except OSError as exc:
             exc_type = type(exc)
             msg = str(exc)
             raise exc_type(f"Cannot load default CA certificate chain: {msg}")
@@ -223,7 +235,7 @@ def _get_ssl_ctx(
 
     try:
         ssl_cxt.load_cert_chain(certfile=certfile, keyfile=keyfile)
-    except IOError as exc:
+    except OSError as exc:
         exc_type = type(exc)
         msg = str(exc)
         raise exc_type(f"Cannot load server certificate file {certfile!r} or "
@@ -241,10 +253,10 @@ def start_wsgi_server(
         port: int,
         addr: str = '0.0.0.0',
         registry: Collector = REGISTRY,
-        certfile: Optional[str] = None,
-        keyfile: Optional[str] = None,
-        client_cafile: Optional[str] = None,
-        client_capath: Optional[str] = None,
+        certfile: str | None = None,
+        keyfile: str | None = None,
+        client_cafile: str | None = None,
+        client_capath: str | None = None,
         protocol: int = ssl.PROTOCOL_TLS_SERVER,
         client_auth_required: bool = False,
         tls_min_version: Optional[ssl.TLSVersion] = None,
@@ -295,8 +307,7 @@ def generate_latest(registry: Collector = REGISTRY, escaping: str = openmetrics.
         if samples.labels:
             labelstr = '{0}'.format(','.join(
                 # Label values always support UTF-8
-                ['{}="{}"'.format(
-                    openmetrics.escape_label_name(k, escaping), openmetrics._escape(v, openmetrics.ALLOWUTF8, False))
+                [f'{openmetrics.escape_label_name(k, escaping)}="{openmetrics._escape(v, openmetrics.ALLOWUTF8, False)}"'
                     for k, v in sorted(samples.labels.items())]))
         else:
             labelstr = ''
@@ -306,7 +317,7 @@ def generate_latest(registry: Collector = REGISTRY, escaping: str = openmetrics.
             timestamp = f' {int(float(samples.timestamp) * 1000):d}'
         if escaping != openmetrics.ALLOWUTF8 or openmetrics._is_valid_legacy_metric_name(samples.name):
             if labelstr:
-                labelstr = '{{{0}}}'.format(labelstr)
+                labelstr = f'{{{labelstr}}}'
             return f'{openmetrics.escape_metric_name(samples.name, escaping)}{labelstr} {floatToGoString(samples.value)}{timestamp}\n'
         maybe_comma = ''
         if labelstr:
@@ -472,7 +483,7 @@ class MetricsHandler(BaseHTTPRequestHandler):
         return MyMetricsHandler
 
 
-def write_to_textfile(path: str, registry: Collector, escaping: str = openmetrics.ALLOWUTF8, tmpdir: Optional[str] = None) -> None:
+def write_to_textfile(path: str, registry: Collector, escaping: str = openmetrics.ALLOWUTF8, tmpdir: str | None = None) -> None:
     """Write metrics to the given path.
 
     This is intended for use with the Node exporter textfile collector.
@@ -562,8 +573,8 @@ def basic_auth_handler(
         timeout: Optional[float],
         headers: List[Tuple[str, str]],
         data: bytes,
-        username: Optional[str] = None,
-        password: Optional[str] = None,
+        username: str | None = None,
+        password: str | None = None,
 ) -> Callable[[], None]:
     """Handler that implements HTTP/HTTPS connections with Basic Auth.
 
@@ -591,7 +602,7 @@ def tls_auth_handler(
         data: bytes,
         certfile: str,
         keyfile: str,
-        cafile: Optional[str] = None,
+        cafile: str | None = None,
         protocol: int = ssl.PROTOCOL_TLS_CLIENT,
         insecure_skip_verify: bool = False,
 ) -> Callable[[], None]:
@@ -825,4 +836,4 @@ def instance_ip_grouping_key() -> Dict[str, Any]:
         return {'instance': s.getsockname()[0]}
 
 
-from .asgi import make_asgi_app  # noqa
+from .asgi import make_asgi_app

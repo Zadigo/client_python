@@ -101,7 +101,7 @@ Uses the HTTP `PUT` method.
 | `grouping_key` | `Optional[Dict[str, Any]]` | `None` | Additional labels to identify the group. See the [Pushgateway documentation](https://github.com/prometheus/pushgateway/blob/master/README.md) for details. |
 | `timeout` | `Optional[float]` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
 | `handler` | `Callable` | `default_handler` | Function that performs the HTTP request. See [Handlers](#handlers) below. |
-| `compression` | `Optional[str]` | `None` | Compress the payload before sending. Accepts `'gzip'` or `'snappy'`. Snappy requires the [`python-snappy`](https://github.com/andrix/python-snappy) package. |
+| `compression` | `str | None` | `None` | Compress the payload before sending. Accepts `'gzip'` or `'snappy'`. Snappy requires the [`python-snappy`](https://github.com/andrix/python-snappy) package. |
 
 ### `pushadd_to_gateway(gateway, job, registry, grouping_key=None, timeout=30, handler=default_handler, compression=None)`
 
@@ -116,7 +116,7 @@ Uses the HTTP `POST` method.
 | `grouping_key` | `Optional[Dict[str, Any]]` | `None` | Additional labels to identify the group. |
 | `timeout` | `Optional[float]` | `30` | Seconds before the request is aborted. Pass `None` for no timeout. |
 | `handler` | `Callable` | `default_handler` | Function that performs the HTTP request. |
-| `compression` | `Optional[str]` | `None` | Compress the payload. Accepts `'gzip'` or `'snappy'`. |
+| `compression` | `str | None` | `None` | Compress the payload. Accepts `'gzip'` or `'snappy'`. |
 
 ### `delete_from_gateway(gateway, job, grouping_key=None, timeout=30, handler=default_handler)`
 
@@ -172,8 +172,8 @@ Wraps `default_handler` and adds an HTTP Basic Auth header.
 
 | Extra parameter | Type | Default | Description |
 |----------------|------|---------|-------------|
-| `username` | `Optional[str]` | `None` | HTTP Basic Auth username. |
-| `password` | `Optional[str]` | `None` | HTTP Basic Auth password. |
+| `username` | `str | None` | `None` | HTTP Basic Auth username. |
+| `password` | `str | None` | `None` | HTTP Basic Auth password. |
 
 ### `tls_auth_handler(url, method, timeout, headers, data, certfile, keyfile, cafile=None, protocol=ssl.PROTOCOL_TLS_CLIENT, insecure_skip_verify=False)`
 
@@ -183,7 +183,7 @@ Performs the request over HTTPS using TLS client certificate authentication.
 |----------------|------|---------|-------------|
 | `certfile` | `str` | required | Path to the client certificate PEM file. |
 | `keyfile` | `str` | required | Path to the client private key PEM file. |
-| `cafile` | `Optional[str]` | `None` | Path to a CA certificate file for server verification. Uses system defaults if not set. |
+| `cafile` | `str | None` | `None` | Path to a CA certificate file for server verification. Uses system defaults if not set. |
 | `protocol` | `int` | `ssl.PROTOCOL_TLS_CLIENT` | SSL/TLS protocol version. |
 | `insecure_skip_verify` | `bool` | `False` | Skip server certificate verification. Use only in controlled environments. |
 

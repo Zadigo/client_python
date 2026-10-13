@@ -1,15 +1,16 @@
 import platform as pf
-from typing import Any, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any, Optional
 
 from .metrics_core import GaugeMetricFamily, Metric
-from .registry import Collector, CollectorRegistry, REGISTRY
+from .registry import REGISTRY, Collector, CollectorRegistry
 
 
 class PlatformCollector(Collector):
     """Collector for python platform information"""
 
     def __init__(self,
-                 registry: Optional[CollectorRegistry] = REGISTRY,
+                 registry: CollectorRegistry | None = REGISTRY,
                  platform: Optional[Any] = None,
                  ):
         self._platform = pf if platform is None else platform

@@ -1,21 +1,36 @@
-from concurrent.futures import ThreadPoolExecutor
 import os
 import time
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
 from prometheus_client import metrics
 from prometheus_client.core import (
-    CollectorRegistry, Counter, CounterMetricFamily, DuplicateTimeseries, Enum,
-    Gauge, GaugeHistogramMetricFamily, GaugeMetricFamily, Histogram,
-    HistogramMetricFamily, Info, InfoMetricFamily, Metric, Sample,
-    StateSetMetricFamily, Summary, SummaryMetricFamily, UntypedMetricFamily,
+    CollectorRegistry,
+    Counter,
+    CounterMetricFamily,
+    DuplicateTimeseries,
+    Enum,
+    Gauge,
+    GaugeHistogramMetricFamily,
+    GaugeMetricFamily,
+    Histogram,
+    HistogramMetricFamily,
+    Info,
+    InfoMetricFamily,
+    Metric,
+    Sample,
+    StateSetMetricFamily,
+    Summary,
+    SummaryMetricFamily,
+    UntypedMetricFamily,
 )
 from prometheus_client.decorator import getargspec
 from prometheus_client.metrics import _get_use_created
 from prometheus_client.validation import (
-    disable_legacy_validation, enable_legacy_validation,
+    disable_legacy_validation,
+    enable_legacy_validation,
 )
 
 
@@ -99,7 +114,7 @@ class TestCounter(unittest.TestCase):
         try:
             with self.counter.count_exceptions():
                 raise ValueError
-        except:
+        except (TypeError, ValueError):
             raised = True
         self.assertTrue(raised)
         self.assertEqual(1, self.registry.get_sample_value('c_total'))
@@ -526,7 +541,7 @@ class TestHistogram(unittest.TestCase):
         with LegacyValidationContextManager():
             self.assertRaises(ValueError, self.histogram.observe, 3.0, exemplar={':o)': 'smile'})
             self.assertRaises(ValueError, self.histogram.observe, 3.0, exemplar={'1': 'number'})
-        
+
     def test_exemplar_invalid_label_name(self):
         self.histogram.observe(3.0, exemplar={':o)': 'smile'})
         self.histogram.observe(3.0, exemplar={'1': 'number'})
@@ -690,7 +705,7 @@ class TestMetricWrapper(unittest.TestCase):
         self.assertIsNone(ret)
         # Ensure the series is still present
         self.assertEqual(1, self.registry.get_sample_value('c4_total', {'tenant': 'acme', 'endpoint': '/'}))
-        
+
     def test_non_string_labels_raises(self):
         class Test:
             __str__ = None
