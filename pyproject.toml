@@ -35,6 +35,9 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
 ]
+dependencies = [
+    "twisted>=25.5.0",
+]
 
 [project.optional-dependencies]
 twisted = [

@@ -1,4 +1,7 @@
-from typing import Dict, NamedTuple, Optional, Sequence, Union
+from __future__ import annotations
+
+from collections.abc import Sequence
+from typing import NamedTuple
 
 
 class Timestamp:
@@ -27,10 +30,10 @@ class Timestamp:
     def __ne__(self, other: object) -> bool:
         return not self == other
 
-    def __gt__(self, other: "Timestamp") -> bool:
+    def __gt__(self, other: Timestamp) -> bool:
         return self.nsec > other.nsec if self.sec == other.sec else self.sec > other.sec
 
-    def __lt__(self, other: "Timestamp") -> bool:
+    def __lt__(self, other: Timestamp) -> bool:
         return self.nsec < other.nsec if self.sec == other.sec else self.sec < other.sec
 
 
@@ -46,9 +49,9 @@ class BucketSpan(NamedTuple):
 # a Timestamp object, or None.
 # Exemplar can be an Exemplar object, or None.
 class Exemplar(NamedTuple):
-    labels: Dict[str, str]
+    labels: dict[str, str]
     value: float
-    timestamp: Optional[Union[float, Timestamp]] = None
+    timestamp: float | Timestamp | None = None
 
 
 # NativeHistogram is experimental and subject to change at any time.
@@ -58,17 +61,17 @@ class NativeHistogram(NamedTuple):
     schema: int
     zero_threshold: float
     zero_count: float
-    pos_spans: Optional[Sequence[BucketSpan]] = None
-    neg_spans: Optional[Sequence[BucketSpan]] = None
-    pos_deltas: Optional[Sequence[int]] = None
-    neg_deltas: Optional[Sequence[int]] = None
-    nh_exemplars: Optional[Sequence[Exemplar]] = None
+    pos_spans: Sequence[BucketSpan] | None = None
+    neg_spans: Sequence[BucketSpan] | None = None
+    pos_deltas: Sequence[int] | None = None
+    neg_deltas: Sequence[int] | None = None
+    nh_exemplars: Sequence[Exemplar] | None = None
 
 
 class Sample(NamedTuple):
     name: str
-    labels: Dict[str, str]
+    labels: dict[str, str]
     value: float
-    timestamp: Optional[Union[float, Timestamp]] = None
-    exemplar: Optional[Exemplar] = None
-    native_histogram: Optional[NativeHistogram] = None
+    timestamp: float | Timestamp | None = None
+    exemplar: Exemplar | None = None
+    native_histogram: NativeHistogram | None = None

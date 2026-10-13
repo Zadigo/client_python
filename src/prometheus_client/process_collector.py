@@ -1,6 +1,8 @@
+from __future__ import annotations
+
 import os
 from collections.abc import Iterable
-from typing import Callable, Union
+from typing import Callable
 
 from .metrics_core import CounterMetricFamily, GaugeMetricFamily, Metric
 from .registry import REGISTRY, Collector, CollectorRegistry
@@ -17,11 +19,13 @@ except ImportError:
 class ProcessCollector(Collector):
     """Collector for Standard Exports such as cpu and memory."""
 
-    def __init__(self,
-                 namespace: str = '',
-                 pid: Callable[[], Union[int, str]] = lambda: 'self',
-                 proc: str = '/proc',
-                 registry: CollectorRegistry | None = REGISTRY):
+    def __init__(
+        self,
+        namespace: str = '',
+        pid: Callable[[], int | str] = lambda: 'self',
+        proc: str = '/proc',
+        registry: CollectorRegistry | None = REGISTRY
+    ):
         self._namespace = namespace
         self._pid = pid
         self._proc = proc

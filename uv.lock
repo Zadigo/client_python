@@ -1499,6 +1499,10 @@ wheels = [
 name = "prometheus-client"
 version = "0.26.0"
 source = { editable = "." }
+dependencies = [
+    { name = "twisted", version = "25.5.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.9.12'" },
+    { name = "twisted", version = "26.4.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.9.12'" },
+]
 
 [package.optional-dependencies]
 aiohttp = [
@@ -1541,6 +1545,7 @@ dev = [
 requires-dist = [
     { name = "aiohttp", marker = "extra == 'aiohttp'" },
     { name = "django", marker = "extra == 'django'" },
+    { name = "twisted", specifier = ">=25.5.0" },
     { name = "twisted", marker = "extra == 'twisted'" },
 ]
 provides-extras = ["twisted", "aiohttp", "django"]

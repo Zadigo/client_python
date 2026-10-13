@@ -3,8 +3,8 @@ from __future__ import annotations
 from aiohttp import hdrs, web
 from aiohttp.typedefs import Handler
 
-from ..exposition import _bake_output
-from ..registry import Collector, REGISTRY
+from prometheus_client.exposition import _bake_output
+from prometheus_client.registry import REGISTRY, Collector
 
 
 def make_aiohttp_handler(
@@ -15,7 +15,7 @@ def make_aiohttp_handler(
 
     async def prometheus_handler(request: web.Request) -> web.Response:
         # Prepare parameters
-        params = {key: request.query.getall(key) for key in request.query.keys()}
+        params = {key: request.query.getall(key) for key in request.query}
         accept_header = ",".join(request.headers.getall(hdrs.ACCEPT, []))
         accept_encoding_header = ""
         # Bake output

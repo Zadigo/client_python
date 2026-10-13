@@ -4,9 +4,10 @@ from io import StringIO
 from sys import maxunicode
 from typing import Callable
 
-from ..utils import floatToGoString, parse_version
-from ..validation import (
-    _is_valid_legacy_labelname, _is_valid_legacy_metric_name,
+from prometheus_client.utils import floatToGoString, parse_version
+from prometheus_client.validation import (
+    _is_valid_legacy_labelname,
+    _is_valid_legacy_metric_name,
 )
 
 CONTENT_TYPE_LATEST = 'application/openmetrics-text; version=1.0.0; charset=utf-8'
@@ -27,9 +28,7 @@ def _is_valid_exemplar_metric(metric, sample):
         return True
     if metric.type == 'gaugehistogram' and sample.name.endswith('_bucket'):
         return True
-    if metric.type == 'histogram' and (sample.name.endswith('_bucket') or sample.name == metric.name):
-        return True
-    return False
+    return bool(metric.type == 'histogram' and (sample.name.endswith('_bucket') or sample.name == metric.name))
 
 
 def _compose_exemplar_string(metric, sample, exemplar):
@@ -41,16 +40,9 @@ def _compose_exemplar_string(metric, sample, exemplar):
             k, v.replace('\\', r'\\').replace('\n', r'\n').replace('"', r'\"'))
             for k, v in sorted(exemplar.labels.items())]))
     if exemplar.timestamp is not None:
-        exemplarstr = ' # {} {} {}'.format(
-            labels,
-            floatToGoString(exemplar.value),
-            exemplar.timestamp,
-        )
+        exemplarstr = f' # {labels} {floatToGoString(exemplar.value)} {exemplar.timestamp}'
     else:
-        exemplarstr = ' # {} {}'.format(
-            labels,
-            floatToGoString(exemplar.value),
-        )
+        exemplarstr = f' # {labels} {floatToGoString(exemplar.value)}'
 
     return exemplarstr
 
@@ -61,8 +53,7 @@ def generate_latest(registry, escaping=UNDERSCORES, version="1.0.0"):
     for metric in registry.collect():
         try:
             mname = metric.name
-            output.append('# HELP {} {}\n'.format(
-                escape_metric_name(mname, escaping), _escape(metric.documentation, ALLOWUTF8, _is_legacy_labelname_rune)))
+            output.append(f'# HELP {escape_metric_name(mname, escaping)} {_escape(metric.documentation, ALLOWUTF8, _is_legacy_labelname_rune)}\n')
             output.append(f'# TYPE {escape_metric_name(mname, escaping)} {metric.type}\n')
             if metric.unit:
                 output.append(f'# UNIT {escape_metric_name(mname, escaping)} {metric.unit}\n')
@@ -78,8 +69,7 @@ def generate_latest(registry, escaping=UNDERSCORES, version="1.0.0"):
                     items = sorted(s.labels.items())
                     # Label values always support UTF-8
                     labelstr += ','.join(
-                        ['{}="{}"'.format(
-                            escape_label_name(k, escaping), _escape(v, ALLOWUTF8, _is_legacy_labelname_rune))
+                        [f'{escape_label_name(k, escaping)}="{_escape(v, ALLOWUTF8, _is_legacy_labelname_rune)}"'
                             for k, v in items])
                 if labelstr:
                     labelstr = "{" + labelstr + "}"
@@ -90,17 +80,17 @@ def generate_latest(registry, escaping=UNDERSCORES, version="1.0.0"):
                 timestamp = ''
                 if s.timestamp is not None:
                     timestamp = f' {s.timestamp}'
-                
+
                 # Skip native histogram samples entirely if version < 2.0.0
                 if s.native_histogram and parse_version(version) < (2, 0, 0):
                     continue
-                
+
                 native_histogram = ''
                 negative_spans = ''
                 negative_deltas = ''
                 positive_spans = ''
                 positive_deltas = ''
-                     
+
                 if s.native_histogram:
                     # Initialize basic nh template
                     nh_sample_template = '{{count:{},sum:{},schema:{},zero_threshold:{},zero_count:{}'
@@ -112,7 +102,7 @@ def generate_latest(registry, escaping=UNDERSCORES, version="1.0.0"):
                         s.native_histogram.zero_threshold,
                         s.native_histogram.zero_count,
                     ]
-                  
+
                     # If there are neg spans, append them and the neg deltas to the template and args
                     if s.native_histogram.neg_spans:
                         negative_spans = ','.join([f'{ns[0]}:{ns[1]}' for ns in s.native_histogram.neg_spans])
@@ -130,13 +120,13 @@ def generate_latest(registry, escaping=UNDERSCORES, version="1.0.0"):
                         args.append(positive_spans)
                         nh_sample_template += ',positive_deltas:[{}]'
                         args.append(positive_deltas)                       
-                                                  
+
                     # Add closing brace
                     nh_sample_template += '}}'
 
                     # Format the template with the args
                     native_histogram = nh_sample_template.format(*args)
-                    
+
                     if s.native_histogram.nh_exemplars:
                         for nh_ex in s.native_histogram.nh_exemplars:
                             nh_exemplarstr = _compose_exemplar_string(metric, s, nh_ex)
@@ -148,20 +138,9 @@ def generate_latest(registry, escaping=UNDERSCORES, version="1.0.0"):
                 elif s.value is not None:
                     value = floatToGoString(s.value)
                 if (escaping != ALLOWUTF8) or _is_valid_legacy_metric_name(s.name):
-                    output.append('{}{} {}{}{}\n'.format(
-                        _escape(s.name, escaping, _is_legacy_labelname_rune),
-                        labelstr,
-                        value,
-                        timestamp,
-                        exemplarstr
-                    ))
+                    output.append(f'{_escape(s.name, escaping, _is_legacy_labelname_rune)}{labelstr} {value}{timestamp}{exemplarstr}\n')
                 else:
-                    output.append('{} {}{}{}\n'.format(
-                        labelstr,
-                        value,
-                        timestamp,
-                        exemplarstr
-                    ))
+                    output.append(f'{labelstr} {value}{timestamp}{exemplarstr}\n')
         except Exception as exception:
             exception.args = (exception.args or ('',)) + (metric,)
             raise
@@ -178,7 +157,7 @@ def escape_metric_name(s: str, escaping: str = UNDERSCORES) -> str:
         return s
     if escaping == ALLOWUTF8:
         if not _is_valid_legacy_metric_name(s):
-            return '"{}"'.format(_escape(s, escaping, _is_legacy_metric_rune))
+            return f'"{_escape(s, escaping, _is_legacy_metric_rune)}"'
         return _escape(s, escaping, _is_legacy_metric_rune)
     elif escaping == UNDERSCORES:
         if _is_valid_legacy_metric_name(s):
@@ -201,7 +180,7 @@ def escape_label_name(s: str, escaping: str = UNDERSCORES) -> str:
         return s
     if escaping == ALLOWUTF8:
         if not _is_valid_legacy_labelname(s):
-            return '"{}"'.format(_escape(s, escaping, _is_legacy_labelname_rune))
+            return f'"{_escape(s, escaping, _is_legacy_labelname_rune)}"'
         return _escape(s, escaping, _is_legacy_labelname_rune)
     elif escaping == UNDERSCORES:
         if _is_valid_legacy_labelname(s):
@@ -282,6 +261,4 @@ _SURROGATE_MAX = 0xDFFF
 def _is_valid_utf8(s: str) -> bool:
     if 0 <= ord(s) < _SURROGATE_MIN:
         return True
-    if _SURROGATE_MAX < ord(s) <= maxunicode:
-        return True
-    return False
+    return _SURROGATE_MAX < ord(s) <= maxunicode

@@ -1,9 +1,9 @@
 import gc
 import platform
-from typing import Iterable
+from collections.abc import Iterable
 
 from .metrics_core import CounterMetricFamily, Metric
-from .registry import Collector, CollectorRegistry, REGISTRY
+from .registry import REGISTRY, Collector, CollectorRegistry
 
 
 class GCCollector(Collector):

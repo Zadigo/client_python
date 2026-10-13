@@ -1,11 +1,11 @@
 import os
-from threading import Lock
-from typing import Callable, List
 import warnings
+from threading import Lock
+from typing import Callable
 
-from .mmap_dict import mmap_key, MmapedDict
+from prometheus_client.mmap_dict import MmapedDict, mmap_key
 
-_multi_process_cleanups: List[Callable[[], None]] = []
+_multi_process_cleanups: list[Callable[[], None]] = []
 
 
 def close_all_multiprocess_files():

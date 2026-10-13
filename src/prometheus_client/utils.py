@@ -1,5 +1,6 @@
+from __future__ import annotations
+
 import math
-from typing import Union
 
 INF = float("inf")
 MINUS_INF = float("-inf")
@@ -25,8 +26,8 @@ def floatToGoString(d):
         return s
 
 
-def parse_version(version_str: str) -> tuple[Union[int, str], ...]:
-    version: list[Union[int, str]] = []
+def parse_version(version_str: str) -> tuple[int | str, ...]:
+    version: list[int | str] = []
     for part in version_str.split('.'):
         try:
             version.append(int(part))

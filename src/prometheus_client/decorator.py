@@ -31,7 +31,6 @@
 Decorator module, see http://pypi.python.org/pypi/decorator
 for the documentation.
 """
-from __future__ import print_function
 
 import collections
 import inspect
@@ -49,7 +48,7 @@ if sys.version_info >= (3,):
     def get_init(cls):
         return cls.__init__
 else:
-    class getfullargspec(object):
+    class getfullargspec:
         "A quick and dirty replacement for getfullargspec for Python 2.X"
 
         def __init__(self, f):
@@ -85,7 +84,7 @@ DEF = re.compile(r'\s*def\s*([_\w][_\w\d]*)\s*\(')
 
 
 # basic functionality
-class FunctionMaker(object):
+class FunctionMaker:
     """
     An object with the ability to create functions with a given signature.
     It has attributes name, doc, module, signature, defaults, dict and
@@ -150,7 +149,7 @@ class FunctionMaker(object):
         # check existence required attributes
         assert hasattr(self, 'name')
         if not hasattr(self, 'signature'):
-            raise TypeError('You are decorating a non function: %s' % func)
+            raise TypeError(f'You are decorating a non function: {func}')
 
     def update(self, func, **kw):
         "Update the signature of func with the data in self"
@@ -175,13 +174,13 @@ class FunctionMaker(object):
         evaldict = evaldict or {}
         mo = DEF.match(src)
         if mo is None:
-            raise SyntaxError('not a valid function template\n%s' % src)
+            raise SyntaxError(f'not a valid function template\n{src}')
         name = mo.group(1)  # extract the function name
         names = set([name] + [arg.strip(' *') for arg in
                               self.shortsignature.split(',')])
         for n in names:
             if n in ('_func_', '_call_'):
-                raise NameError('%s is overridden in\n%s' % (n, src))
+                raise NameError(f'{n} is overridden in\n{src}')
 
         if not src.endswith('\n'):  # add a newline for old Pythons
             src += '\n'
@@ -189,7 +188,7 @@ class FunctionMaker(object):
         # Ensure each generated function has a unique filename for profilers
         # (such as cProfile) that depend on the tuple of (<filename>,
         # <definition line>, <function name>) being unique.
-        filename = '<decorator-gen-%d>' % (next(self._compile_count),)
+        filename = f'<decorator-gen-{next(self._compile_count)}>'
         try:
             code = compile(src, filename, 'single')
             exec(code, evaldict)
@@ -230,7 +229,7 @@ def decorate(func, caller):
     """
     decorate(func, caller) decorates a function using a caller.
     """
-    evaldict = dict(_call_=caller, _func_=func)
+    evaldict = {'_call_': caller, '_func_': func}
     fun = FunctionMaker.create(
         func, "return _call_(_func_, %(shortsignature)s)",
         evaldict, __wrapped__=func)
@@ -247,8 +246,8 @@ def decorator(caller, _func=None):
     # else return a decorator function
     if inspect.isclass(caller):
         name = caller.__name__.lower()
-        doc = 'decorator(%s) converts functions/generators into ' \
-              'factories of %s objects' % (caller.__name__, caller.__name__)
+        doc = f'decorator({caller.__name__}) converts functions/generators into ' \
+            f'factories of {caller.__name__} objects'
     elif inspect.isfunction(caller):
         if caller.__name__ == '<lambda>':
             name = '_lambda_'
@@ -258,9 +257,9 @@ def decorator(caller, _func=None):
     else:  # assume caller is an object with a __call__ method
         name = caller.__class__.__name__.lower()
         doc = caller.__call__.__doc__
-    evaldict = dict(_call_=caller, _decorate_=decorate)
+    evaldict = {'_call_': caller, '_decorate_': decorate}
     return FunctionMaker.create(
-        '%s(func)' % name, 'return _decorate_(func, _call_)',
+        f'{name}(func)', 'return _decorate_(func, _call_)',
         evaldict, doc=doc, module=caller.__module__,
         __wrapped__=caller)
 
@@ -327,13 +326,12 @@ def dispatch_on(*dispatch_args):
     dispatching on the given arguments.
     """
     assert dispatch_args, 'No dispatch args passed'
-    dispatch_str = '(%s,)' % ', '.join(dispatch_args)
+    dispatch_str = f'({", ".join(dispatch_args)},)'
 
     def check(arguments, wrong=operator.ne, msg=''):
         """Make sure one passes the expected number of arguments"""
         if wrong(len(arguments), len(dispatch_args)):
-            raise TypeError('Expected %d arguments, got %d%s' %
-                            (len(dispatch_args), len(arguments), msg))
+            raise TypeError(f'Expected {len(dispatch_args)} arguments, got {len(arguments)}{msg}')
 
     def gen_func_dec(func):
         """Decorator turning a function into a generic function"""
@@ -341,7 +339,7 @@ def dispatch_on(*dispatch_args):
         # first check the dispatch arguments
         argset = set(getfullargspec(func).args)
         if not set(dispatch_args) <= argset:
-            raise NameError('Unknown dispatch arguments %s' % dispatch_str)
+            raise NameError(f'Unknown dispatch arguments {dispatch_str}')
 
         typemap = {}
 
@@ -367,7 +365,7 @@ def dispatch_on(*dispatch_args):
                 n_vas = len(vas)
                 if n_vas > 1:
                     raise RuntimeError(
-                        'Ambiguous dispatch for %s: %s' % (t, vas))
+                        f'Ambiguous dispatch for {t}: {vas}')
                 elif n_vas == 1:
                     va, = vas
                     mro = type('t', (t, va), {}).__mro__[1:]
@@ -418,8 +416,8 @@ def dispatch_on(*dispatch_args):
             return func(*args, **kw)
 
         return FunctionMaker.create(
-            func, 'return _f_(%s, %%(shortsignature)s)' % dispatch_str,
-            dict(_f_=_dispatch), register=register, default=func,
+            func, f'return _f_({dispatch_str}, %%(shortsignature)s)',
+            {'_f_': _dispatch}, register=register, default=func,
             typemap=typemap, vancestors=vancestors, ancestors=ancestors,
             dispatch_info=dispatch_info, __wrapped__=func)
 

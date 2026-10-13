@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 
 from django.http import HttpResponse
@@ -10,7 +12,7 @@ from prometheus_client.exposition import _bake_output
 
 class PrometheusDjangoView(View):
     multiprocess_mode: bool = "PROMETHEUS_MULTIPROC_DIR" in os.environ or "prometheus_multiproc_dir" in os.environ
-    registry: prometheus_client.CollectorRegistry = None
+    registry: prometheus_client.CollectorRegistry | None = None
 
     def get(self, request, *args, **kwargs):
         if self.registry is None:

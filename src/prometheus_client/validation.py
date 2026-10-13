@@ -33,14 +33,13 @@ def enable_legacy_validation():
 
 def _validate_metric_name(name: str) -> None:
     """Raises ValueError if the provided name is not a valid metric name.
-    
+
     This check uses the global legacy validation setting to determine the validation scheme.
     """
     if not name:
         raise ValueError("metric name cannot be empty")
-    if _legacy_validation:
-        if not METRIC_NAME_RE.match(name):
-            raise ValueError("invalid metric name " + name)
+    if _legacy_validation and not METRIC_NAME_RE.match(name):
+        raise ValueError("invalid metric name " + name)
     try:
         name.encode('utf-8')
     except UnicodeDecodeError:
@@ -56,7 +55,7 @@ def _is_valid_legacy_metric_name(name: str) -> bool:
 
 def _validate_metric_label_name_token(tok: str) -> None:
     """Raises ValueError if a parsed label name token is invalid. 
-    
+
     UTF-8 names must be quoted.
     """
     if not tok:
@@ -74,7 +73,7 @@ def _validate_metric_label_name_token(tok: str) -> None:
 
 def _validate_labelname(l):
     """Raises ValueError if the provided name is not a valid label name.
-    
+
     This check uses the global legacy validation setting to determine the validation scheme.
     """
     if get_legacy_validation():
@@ -89,7 +88,7 @@ def _validate_labelname(l):
             raise ValueError('Invalid label metric name: ' + l)
         if RESERVED_METRIC_LABEL_NAME_RE.match(l):
             raise ValueError('Reserved label metric name: ' + l)
-        
+
 
 def _is_valid_legacy_labelname(l: str) -> bool:
     """Returns true if the provided label name conforms to the legacy validation scheme."""
@@ -102,7 +101,7 @@ def _is_valid_legacy_labelname(l: str) -> bool:
 
 def _validate_labelnames(cls, labelnames):
     """Raises ValueError if any of the provided names is not a valid label name.
-    
+
     This check uses the global legacy validation setting to determine the validation scheme.
     """
     labelnames = tuple(labelnames)
