@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import copy
+from collections.abc import Iterable
 from threading import Lock
-from typing import Dict, Iterable, List, Optional, Protocol, Set
+from typing import Protocol
 
 from .metrics_core import Metric
 
@@ -8,6 +11,7 @@ from .metrics_core import Metric
 class Collector(Protocol):
     def collect(self) -> Iterable[Metric]:
         """Collect metrics."""
+        return []
 
 
 class _EmptyCollector:
@@ -16,11 +20,10 @@ class _EmptyCollector:
 
 
 class DuplicateTimeseries(ValueError):
-    def __init__(self, duplicates: Set[str]):
-        msg = 'Duplicated timeseries in CollectorRegistry: {}'.format(
-            duplicates)
+    def __init__(self, duplicates: set[str]):
+        msg = f'Duplicated timeseries in CollectorRegistry: {duplicates}'
         super().__init__(msg)
-        self.duplicates: Set[str] = duplicates
+        self.duplicates: set[str] = duplicates
 
 
 class CollectorRegistry:
@@ -31,15 +34,19 @@ class CollectorRegistry:
     exposition formats.
     """
 
-    def __init__(self, auto_describe: bool = False, target_info: Optional[Dict[str, str]] = None,
-                 support_collectors_without_names: bool = False):
-        self._collector_to_names: Dict[Collector, List[str]] = {}
-        self._names_to_collectors: Dict[str, Collector] = {}
+    def __init__(
+        self, 
+        auto_describe: bool = False, 
+        target_info: dict[str, str] | None = None,
+        support_collectors_without_names: bool = False
+    ):
+        self._collector_to_names: dict[Collector, list[str]] = {}
+        self._names_to_collectors: dict[str, Collector] = {}
         self._auto_describe = auto_describe
         self._lock = Lock()
-        self._target_info: Optional[Dict[str, str]] = {}
+        self._target_info: dict[str, str] | None = {}
         self._support_collectors_without_names = support_collectors_without_names
-        self._collectors_without_names: List[Collector] = []
+        self._collectors_without_names: list[Collector] = []
         self.set_target_info(target_info)
 
     def register(self, collector: Collector) -> None:
@@ -106,7 +113,7 @@ class CollectorRegistry:
         for collector in collectors:
             yield from collector.collect()
 
-    def restricted_registry(self, names: Iterable[str]) -> "RestrictedRegistry":
+    def restricted_registry(self, names: Iterable[str]) -> RestrictedRegistry:
         """Returns object that only collects some metrics.
 
         Returns an object which upon collect() will return
@@ -119,7 +126,7 @@ class CollectorRegistry:
         names = set(names)
         return RestrictedRegistry(names, self)
 
-    def set_target_info(self, labels: Optional[Dict[str, str]]) -> None:
+    def set_target_info(self, labels: dict[str, str] | None) -> None:
         with self._lock:
             if labels:
                 if not self._target_info and 'target_info' in self._names_to_collectors:
@@ -129,7 +136,7 @@ class CollectorRegistry:
                 self._names_to_collectors.pop('target_info', None)
             self._target_info = labels
 
-    def get_target_info(self) -> Optional[Dict[str, str]]:
+    def get_target_info(self) -> dict[str, str] | None:
         with self._lock:
             return self._target_info
 
@@ -138,7 +145,7 @@ class CollectorRegistry:
         m.add_sample('target_info', self._target_info, 1)
         return m
 
-    def get_sample_value(self, name: str, labels: Optional[Dict[str, str]] = None) -> Optional[float]:
+    def get_sample_value(self, name: str, labels: dict[str, str] | None = None) -> float | None:
         """Returns the sample value, or None if not found.
 
         This is inefficient, and intended only for use in unittests.

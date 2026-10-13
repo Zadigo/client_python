@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 from timeit import default_timer
 from types import TracebackType
 from typing import (
-    Any, Callable, Literal, Optional, Tuple, Type, TYPE_CHECKING, TypeVar,
-    Union,
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Literal,
+    TypeVar,
 )
 
 from .decorator import decorate
@@ -13,19 +18,19 @@ if TYPE_CHECKING:
 
 
 class ExceptionCounter:
-    def __init__(self, counter: "Counter", exception: Union[Type[BaseException], Tuple[Type[BaseException], ...]]) -> None:
+    def __init__(self, counter: Counter, exception: type[BaseException] | tuple[type[BaseException], ...]) -> None:
         self._counter = counter
         self._exception = exception
 
     def __enter__(self) -> None:
         pass
 
-    def __exit__(self, typ: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> Literal[False]:
+    def __exit__(self, typ: type[BaseException] | None, value: BaseException | None, traceback: TracebackType | None) -> Literal[False]:
         if isinstance(value, self._exception):
             self._counter.inc()
         return False
 
-    def __call__(self, f: "F") -> "F":
+    def __call__(self, f: F) -> F:
         def wrapped(func, *args, **kwargs):
             with self:
                 return func(*args, **kwargs)
@@ -43,7 +48,7 @@ class InprogressTracker:
     def __exit__(self, typ, value, traceback):
         self._gauge.dec()
 
-    def __call__(self, f: "F") -> "F":
+    def __call__(self, f: F) -> F:
         def wrapped(func, *args, **kwargs):
             with self:
                 return func(*args, **kwargs)
@@ -73,7 +78,7 @@ class Timer:
     def labels(self, *args, **kw):
         self._metric = self._metric.labels(*args, **kw)
 
-    def __call__(self, f: "F") -> "F":
+    def __call__(self, f: F) -> F:
         def wrapped(func, *args, **kwargs):
             # Obtaining new instance of timer every time
             # ensures thread safety and reentrancy.

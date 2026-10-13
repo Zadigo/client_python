@@ -106,7 +106,8 @@ omit = [
     "manage.py",
     "*/migrations/*",
     "*/__init__.py",
-    "*/typings.py"
+    "*/typings.py",
+    "*/tests/"
 ]
 
 [tool.coverage.report]

@@ -34,7 +34,7 @@ class ASGITest(TestCase):
         setup_testing_defaults(self.scope)
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.communicator = None
+        self.communicator: ApplicationCommunicator | None = None
 
     def tearDown(self):
         if self.communicator:
@@ -209,7 +209,7 @@ class ASGITest(TestCase):
             self.increment_metrics(*m)
 
         for i_1 in range(len(metrics)):
-            self.scope['query_string'] = f"name[]={metrics[i_1][0]}_total".encode("utf-8")
+            self.scope['query_string'] = f"name[]={metrics[i_1][0]}_total".encode()
             self.seed_app(app)
             self.send_default_request()
 
