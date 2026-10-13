@@ -8,7 +8,7 @@ license-files = [
 	"LICENSE",
 	"NOTICE",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.13"
 authors = [
     { name = "The Prometheus Authors", email = "prometheus-developers@googlegroups.com" },
 ]
@@ -25,19 +25,15 @@ classifiers = [
     "Intended Audience :: System Administrators",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
 ]
 dependencies = [
     "pydantic>=2.13.5",
-    "twisted>=25.5.0",
 ]
 
 [project.optional-dependencies]
@@ -71,6 +67,7 @@ dev = [
     "pytest-reportlog>=0.4.0",
     "pytest-timeout>=2.4.0",
     "ruff>=0.17.0",
+    "twisted>=25.5.0",
 ]
 
 [tool.pyright]

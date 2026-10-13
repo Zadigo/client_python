@@ -4,17 +4,15 @@ import os
 import time
 import types
 import warnings
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from threading import Lock
 from typing import (
     Any,
-    Callable,
     ClassVar,
     Literal,
+    Self,
     TypeVar,
 )
-
-from typing_extensions import Self
 
 from . import values  # retain this import style for testability
 from .context_managers import ExceptionCounter, InprogressTracker, Timer
@@ -337,8 +335,14 @@ class Counter(MetricWrapperBase):
     _type = 'counter'
 
     def _metric_init(self) -> None:
-        self._value = values.ValueClass(self._type, self._name, self._name + '_total', self._labelnames,
-                                        self._labelvalues, self._documentation)
+        self._value = values.ValueClass(
+            self._type, 
+            self._name, 
+            self._name + '_total', 
+            self._labelnames,
+            self._labelvalues, 
+            self._documentation
+        )
         self._created = time.time()
 
     def inc(self, amount: float = 1, exemplar: dict[str, str] | None = None) -> None:
@@ -417,17 +421,18 @@ class Gauge(MetricWrapperBase):
     _MULTIPROC_MODES = frozenset(('all', 'liveall', 'min', 'livemin', 'max', 'livemax', 'sum', 'livesum', 'mostrecent', 'livemostrecent'))
     _MOST_RECENT_MODES = frozenset(('mostrecent', 'livemostrecent'))
 
-    def __init__(self,
-                 name: str,
-                 documentation: str,
-                 labelnames: Iterable[str] = (),
-                 namespace: str = '',
-                 subsystem: str = '',
-                 unit: str = '',
-                 registry: CollectorRegistry | None = REGISTRY,
-                 _labelvalues: Sequence[str] | None = None,
-                 multiprocess_mode: Literal['all', 'liveall', 'min', 'livemin', 'max', 'livemax', 'sum', 'livesum', 'mostrecent', 'livemostrecent'] = 'all',
-                 ):
+    def __init__(
+        self,
+        name: str,
+        documentation: str,
+        labelnames: Iterable[str] = (),
+        namespace: str = '',
+        subsystem: str = '',
+        unit: str = '',
+        registry: CollectorRegistry | None = REGISTRY,
+        _labelvalues: Sequence[str] | None = None,
+        multiprocess_mode: Literal['all', 'liveall', 'min', 'livemin', 'max', 'livemax', 'sum', 'livesum', 'mostrecent', 'livemostrecent'] = 'all',
+    ):
         self._multiprocess_mode = multiprocess_mode
         if multiprocess_mode not in self._MULTIPROC_MODES:
             raise ValueError('Invalid multiprocess mode: ' + multiprocess_mode)

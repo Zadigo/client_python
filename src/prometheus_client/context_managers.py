@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from timeit import default_timer
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     Literal,
     TypeVar,
 )

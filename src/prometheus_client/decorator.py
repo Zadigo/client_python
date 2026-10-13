@@ -94,8 +94,16 @@ class FunctionMaker:
     # Atomic get-and-increment provided by the GIL
     _compile_count = itertools.count()
 
-    def __init__(self, func=None, name=None, signature=None,
-                 defaults=None, doc=None, module=None, funcdict=None):
+    def __init__(
+        self, 
+        func=None, 
+        name=None, 
+        signature=None,
+        defaults=None, 
+        doc=None, 
+        module=None, 
+        funcdict=None
+    ):
         self.shortsignature = signature
         if func:
             # func can be a class or a callable, but not an instance method
@@ -203,8 +211,17 @@ class FunctionMaker:
         return func
 
     @classmethod
-    def create(cls, obj, body, evaldict, defaults=None,
-               doc=None, module=None, addsource=True, **attrs):
+    def create(
+        cls, 
+        obj, 
+        body, 
+        evaldict, 
+        defaults=None,
+        doc=None, 
+        module=None, 
+        addsource=True, 
+        **attrs
+    ):
         """
         Create a function from the strings name, signature and body.
         evaldict is the evaluation dictionary. If addsource is true an
